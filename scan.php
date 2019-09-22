@@ -59,7 +59,7 @@ if($host != ''){
     }elseif($ip[0]<255){
       $ip[0]++;
     }else{
-      echo '[X] Une erreur est survenue impossible d\'incrémenter: '.implode('.',$ip);
+      echo '[X] error on increment: '.implode('.',$ip);
       break;
     }
     $plage_begin = implode('.',$ip); 
@@ -106,13 +106,13 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
           if($checkVhost){
             $result = vhostRequest($hostList[$j],$ip,$port,$burp);
             if($result[0]!='200' and $verbose){
-              if(!$onlyVhost) echo "[!] check vhost code de retour ".$result[0]." vhost :".$hostList[$j]." taille de la reponse: ".$result[1].PHP_EOL;
+              if(!$onlyVhost) echo "[!] check vhost return code".$result[0]." vhost :".$hostList[$j]." answer size: ".$result[1].PHP_EOL;
             } elseif($result[0]=='200' ) {
-              if(!$onlyVhost) echo "[*] check vhost code de retour ".$result[0]." vhost :".$hostList[$j]." taille de la reponse: ".$result[1].PHP_EOL;
+              if(!$onlyVhost) echo "[*] check vhost return code ".$result[0]." vhost :".$hostList[$j]." answer size: ".$result[1].PHP_EOL;
             }
             if(count($sizeListe)>0){
               if($result[1]> (min($sizeListe)+$sizeVariation)){
-                echo '[*] une variation importante de la taille a ete detecte ('.($result[1]-min($sizeListe)).') le domaine '.$hostList[$j].' fait probablement partie de vhosts de http://'.$ip.':'.$port.PHP_EOL;
+                echo '[*] a variation has been detect ('.($result[1]-min($sizeListe)).') the domain '.$hostList[$j].' propably vhost of http://'.$ip.':'.$port.PHP_EOL;
               }
             }
             $sizeListe[] = $result[1];
