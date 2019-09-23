@@ -3,6 +3,8 @@
 # ASNVhostDiscover
 This tool allows you to discover hidden vhost on an IP range. You can use it in BugBounty for example to find servers containing forgotten vhost
 
+You can also use it to bypasse SaaS WAF like cloudflare when the target use know AS
+
 # how to use
 
 Run the tool :
