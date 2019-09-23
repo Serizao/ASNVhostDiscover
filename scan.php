@@ -52,10 +52,13 @@ if($host != ''){
     $ip = explode('.',$plage_begin);
     if($ip[3]<255){
       $ip[3]++;
+       $ip[2] = $ip[1] = $ip[0] = 0;
     }elseif($ip[2]<255){
       $ip[2]++;
+      $ip[1] = $ip[0] = 0;
     }elseif($ip[1]<255){
       $ip[1]++;
+      $ip[0] = 0;
     }elseif($ip[0]<255){
       $ip[0]++;
     }else{
