@@ -49,18 +49,18 @@ if($host != ''){
   while(ip2long($plage_begin)<ip2long($plage_end)){
     
     //increment de l\'ip
-    $ip = explode('.',$plage_begin);
+   $ip = explode('.',$plage_begin);
     if($ip[3]<255){
       $ip[3]++;
-       $ip[2] = $ip[1] = $ip[0] = 0;
     }elseif($ip[2]<255){
       $ip[2]++;
-      $ip[1] = $ip[0] = 0;
+      $ip[3] = 0;
     }elseif($ip[1]<255){
       $ip[1]++;
-      $ip[0] = 0;
+      $ip[3] = $ip[2] = 0;
     }elseif($ip[0]<255){
       $ip[0]++;
+      $ip[3] = $ip[2]  = $ip[1] = 0;
     }else{
       echo '[X] error on increment: '.implode('.',$ip);
       break;
