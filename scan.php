@@ -94,8 +94,8 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
   if(!is_array($searchHost)) $hostList[] = $searchHost;
   else $hostList = $searchHost;
   $get = stream_context_create(array("ssl" => array("capture_peer_cert" => TRUE,'verify_peer' => false,'verify_peer_name' => false)));
-  $read = stream_socket_client("ssl://".$ip.":".$port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $get);
-  $cert = stream_context_get_params($read);
+  $read = @stream_socket_client("ssl://".$ip.":".$port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $get);
+  $cert = @stream_context_get_params($read);
   $certinfo = openssl_x509_parse($cert['options']['ssl']['peer_certificate']);
   if(isset($certinfo['extensions']['subjectAltName'])){
     $allName = str_replace('DNS:','',$certinfo['extensions']['subjectAltName']);
