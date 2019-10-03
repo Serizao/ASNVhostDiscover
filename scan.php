@@ -37,11 +37,11 @@ if($host != ''){
   for($i=0;$i<count($port);$i++){
     $result = scanPort($host,$port[$i]);
     if($result === true){
-      if(!$onlyVhost) echo '[*] Port '.$port[$i].' is open '.getservbyport($port[$i], 'tcp').PHP_EOL;
+      if(!$onlyVhost) echo "[\e[0;32m*\e[0m]  Port ".$port[$i].' is open '.getservbyport($port[$i], 'tcp').PHP_EOL;
       if($domaine != '' ){ //check in cert name
         searchInCert($host,$port[$i],$domaine,$checkVhost,$verbose,$sizeVariation,$burp,$onlyVhost);
       }
-    }elseif($verbose)  echo '[X] Port '.$port[$i].' is closed (host: '.$host.') '.getservbyport($port[$i], 'tcp').PHP_EOL;
+    }elseif($verbose)  echo "[\e[31mX\e[0m] Port ".$port[$i].' is closed (host: '.$host.') '.getservbyport($port[$i], 'tcp').PHP_EOL;
   }
 } elseif ($subnet != ''){
   $plage = cidrconv($subnet);
@@ -63,7 +63,7 @@ if($host != ''){
       $ip[0]++;
       $ip[3] = $ip[2]  = $ip[1] = 0;
     }else{
-      echo '[X] error on increment: '.implode('.',$ip);
+      echo "[\e[31mX\e[0m] error on increment: ".implode('.',$ip);
       break;
     }
     $plage_begin = implode('.',$ip); 
@@ -72,11 +72,11 @@ if($host != ''){
     for($i=0;$i<count($port);$i++){
       $result = scanPort($plage_begin,$port[$i]);
       if($result === true){
-        if(!$onlyVhost) echo '[*] Port '.$port[$i].' is open '.getservbyport($port[$i], 'tcp').' on ip '.$plage_begin.PHP_EOL;
+        if(!$onlyVhost) echo "[\e[0;32m*\e[0m]  Port ".$port[$i].' is open '.getservbyport($port[$i], 'tcp').' on ip '.$plage_begin.PHP_EOL;
         if($domaine != '' ){ //check in cert name
             searchInCert($plage_begin, $port[$i], $domaine, $checkVhost, $verbose, $sizeVariation, $burp,$onlyVhost, $compareOriginal);
         }
-      } elseif($verbose) echo '[X] Port '.$port[$i].' is closed (host: '.$plage_begin.') '.getservbyport($port[$i], 'tcp').PHP_EOL;
+      } elseif($verbose) echo "[\e[31mX\e[0m] Port ".$port[$i].' is closed (host: '.$plage_begin.') '.getservbyport($port[$i], 'tcp').PHP_EOL;
     }
   }
 }
@@ -106,7 +106,7 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
       $tempVar = str_replace('*','.*',$tempVar);
       for($j=0;$j<count($hostList);$j++){
         if(preg_match($tempVar,$hostList[$j])){
-          if(!$onlyVhost) echo '[*] '. $j .'---'  .$hostList[$j].' (host:'.$ip.':'.$port.') match with domain in cert : '.$allName[$i]. PHP_EOL;
+          if(!$onlyVhost) echo "[\e[0;32m*\e[0m] " .$hostList[$j].' (host:'.$ip.':'.$port.') match with domain in cert : '.$allName[$i]. PHP_EOL;
           if($checkVhost){
             $result = vhostRequest($hostList[$j],$ip,$port,$burp);
             if($result[0]!='200' and $verbose){
@@ -114,18 +114,25 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
             } elseif($result[0]=='200' ) {
 
               if(!$onlyVhost){
-                if($compareOriginal){
-                  $resultOriginal = vhostRequest($hostList[$j], $hostList[$j], $port, $burp);
-
-                  echo "[*] check vhost return code " . $result[0] . " vhost :" . $hostList[$j] . " answer size: " . $result[1] . ' the original target size is ' . $resultOriginal[1] . PHP_EOL;
-                }else{
-                  echo "[*] check vhost return code " . $result[0] . " vhost :" . $hostList[$j] . " answer size: " . $result[1] . PHP_EOL;
-                }
+                echo "[\e[0;32m*\e[0m]  check vhost return code " . $result[0] . " vhost :" . $hostList[$j] . " answer size: " . $result[1] . PHP_EOL;
               } 
             }
             if(count($sizeListe)>0){
               if($result[1]> (min($sizeListe)+$sizeVariation)){
-                echo '[*] a variation has been detect ('.($result[1]-min($sizeListe)).') the domain '.$hostList[$j].' propably vhost of http://'.$ip.':'.$port.PHP_EOL;
+                if ($compareOriginal) {
+                  $listIP = '';
+                  $resultOriginal = vhostRequest($hostList[$j], $hostList[$j], $port, $burp);
+                  $dns = dns_get_record("$hostList[$j]");
+                  for ($l=0;$l<count($dns);$l++){
+                    if($dns[$l]['type'] == 'A'){
+                      if(strlen($listIP)>0) $listIP .= ' or ';
+                      $listIP .= $dns[$l]['ip'];
+                    }
+                  }
+                  echo "[\e[0;32m*\e[0m] a variation has been detect (" . ($result[1] - min($sizeListe)) . ') the domain ' . $hostList[$j] . ' propably vhost of http://' . $ip . ':' . $port . PHP_EOL . '    → original dns IP ( ' . $listIP . ' ) '. PHP_EOL . '    → size detected ' . $result[1] . ' the original size is ' . $resultOriginal[1] . PHP_EOL . PHP_EOL;
+                } else {
+                  echo "[\e[0;32m*\e[0m] a variation has been detect (" . ($result[1] - min($sizeListe)) . ') the domain ' . $hostList[$j] . ' propably vhost of http://' . $ip . ':' . $port . PHP_EOL;
+                }
               }
             }
             $sizeListe[] = $result[1];
@@ -138,16 +145,17 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
 }
 
 function help(){
-  echo '--ports           Ports to scan if there are many port separate it by , : --ports=80,443'.PHP_EOL;
-  echo '--host            Host to scan (single value) : google.fr'.PHP_EOL;
-  echo '--network         Network to scan exemple : 10.0.0.0/8'.PHP_EOL.PHP_EOL;
-  echo '--check-name      Only on HTTPS check if certs match with this domaine'.PHP_EOL; 
-  echo '--check-name-file Only on HTTPS check if certs match with domaines in file'.PHP_EOL; 
-  echo '--check-vhost     if domaine match with the certificate the script try to detect vhost. Require check-name or check-file-name option'.PHP_EOL.PHP_EOL; 
-  echo '--size-variation  Use it for detect vhost with variation of lenght response (default: 100) : --size-variatoion=200'.PHP_EOL.PHP_EOL;
-  echo '--verbose         Display error'.PHP_EOL.PHP_EOL; 
-  echo '--burp            Send to burp proxy request for discover vhost (127.0.0.1:8080)'.PHP_EOL.PHP_EOL; 
-  echo '--only-vhost      Show only potential vhost'.PHP_EOL.PHP_EOL; 
+  echo '--ports             Ports to scan if there are many port separate it by , : --ports=80,443'.PHP_EOL;
+  echo '--host              Host to scan (single value) : google.fr'.PHP_EOL;
+  echo '--network           Network to scan exemple : 10.0.0.0/8'.PHP_EOL.PHP_EOL;
+  echo '--check-name        Only on HTTPS check if certs match with this domaine'.PHP_EOL; 
+  echo '--check-name-file   Only on HTTPS check if certs match with domaines in file'.PHP_EOL; 
+  echo '--check-vhost       if domaine match with the certificate the script try to detect vhost. Require check-name or check-file-name option'.PHP_EOL.PHP_EOL; 
+  echo '--size-variation    Use it for detect vhost with variation of lenght response (default: 100) : --size-variatoion=200'.PHP_EOL.PHP_EOL;
+  echo '--verbose           Display error'.PHP_EOL.PHP_EOL; 
+  echo '--burp              Send to burp proxy request for discover vhost (127.0.0.1:8080)'.PHP_EOL.PHP_EOL; 
+  echo '--only-vhost        Show only potential vhost'.PHP_EOL;
+  echo '--compare-original  Comprare potential vhost with original website size' . PHP_EOL . PHP_EOL; 
   echo 'Only --host or --network not both '.PHP_EOL;
 }
 
