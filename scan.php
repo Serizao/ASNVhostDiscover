@@ -5,7 +5,7 @@ ini_set('memory_limit', -1);
 
 
 
-$host = $subnet = $network = $mask = $ports = $verbose = $domaine = $checkVhost = $burp = $onlyVhost ='';
+$compareOriginal = $host = $subnet = $network = $mask = $ports = $verbose = $domaine = $checkVhost = $burp = $onlyVhost ='';
 $sizeVariation = '100';
 for($i=0;$i<count($argv);$i++){
   if(strstr( $argv[$i], '--host=' )) $host = explode('=',$argv[$i])[1];
@@ -17,11 +17,12 @@ for($i=0;$i<count($argv);$i++){
   }
   if(strstr( $argv[$i], '--ports=' )) $ports = explode('=',$argv[$i])[1];
   if(strstr( $argv[$i], '--check-name=' )) $domaine = explode('=',$argv[$i])[1];
-  if(strstr( $argv[$i], '--check-name-file=' )) $domaine = explode("\r\n",file_get_contents(explode('=',$argv[$i])[1]));
+  if(strstr( $argv[$i], '--check-name-file=' )) $domaine = explode(PHP_EOL,file_get_contents(explode('=',$argv[$i])[1]));
   if(strstr( $argv[$i], '--verbose' )) $verbose=true;
   if(strstr( $argv[$i], '--check-vhost' )) $checkVhost=true;
   if(strstr( $argv[$i], '--burp' )) $burp = true;
   if(strstr( $argv[$i], '--only-vhost' )) $onlyVhost = true;
+  if(strstr( $argv[$i], '--compare-original')) $compareOriginal = true;
   if(strstr( $argv[$i], '--size-variation=' )) $sizeVariation = explode('=',$argv[$i])[1];
 }
 
@@ -73,7 +74,7 @@ if($host != ''){
       if($result === true){
         if(!$onlyVhost) echo '[*] Port '.$port[$i].' is open '.getservbyport($port[$i], 'tcp').' on ip '.$plage_begin.PHP_EOL;
         if($domaine != '' ){ //check in cert name
-            searchInCert($plage_begin,$port[$i],$domaine,$checkVhost,$verbose,$sizeVariation,$burp,$onlyVhost);
+            searchInCert($plage_begin, $port[$i], $domaine, $checkVhost, $verbose, $sizeVariation, $burp,$onlyVhost, $compareOriginal);
         }
       } elseif($verbose) echo '[X] Port '.$port[$i].' is closed (host: '.$plage_begin.') '.getservbyport($port[$i], 'tcp').PHP_EOL;
     }
@@ -89,7 +90,7 @@ function scanPort($host,$port){
   else return false;
 }
 
-function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,$burp,$onlyVhost){
+function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,$burp,$onlyVhost, $compareOriginal ) {
   $sizeListe = array();
   if(!is_array($searchHost)) $hostList[] = $searchHost;
   else $hostList = $searchHost;
@@ -105,13 +106,22 @@ function searchInCert($ip,$port,$searchHost,$checkVhost,$verbose,$sizeVariation,
       $tempVar = str_replace('*','.*',$tempVar);
       for($j=0;$j<count($hostList);$j++){
         if(preg_match($tempVar,$hostList[$j])){
-          if(!$onlyVhost) echo '[*] '.$hostList[$j].' (host:'.$ip.':'.$port.') match with domain in cert : '.$allName[$i]. PHP_EOL;
+          if(!$onlyVhost) echo '[*] '. $j .'---'  .$hostList[$j].' (host:'.$ip.':'.$port.') match with domain in cert : '.$allName[$i]. PHP_EOL;
           if($checkVhost){
             $result = vhostRequest($hostList[$j],$ip,$port,$burp);
             if($result[0]!='200' and $verbose){
               if(!$onlyVhost) echo "[!] check vhost return code".$result[0]." vhost :".$hostList[$j]." answer size: ".$result[1].PHP_EOL;
             } elseif($result[0]=='200' ) {
-              if(!$onlyVhost) echo "[*] check vhost return code ".$result[0]." vhost :".$hostList[$j]." answer size: ".$result[1].PHP_EOL;
+
+              if(!$onlyVhost){
+                if($compareOriginal){
+                  $resultOriginal = vhostRequest($hostList[$j], $hostList[$j], $port, $burp);
+
+                  echo "[*] check vhost return code " . $result[0] . " vhost :" . $hostList[$j] . " answer size: " . $result[1] . ' the original target size is ' . $resultOriginal[1] . PHP_EOL;
+                }else{
+                  echo "[*] check vhost return code " . $result[0] . " vhost :" . $hostList[$j] . " answer size: " . $result[1] . PHP_EOL;
+                }
+              } 
             }
             if(count($sizeListe)>0){
               if($result[1]> (min($sizeListe)+$sizeVariation)){
